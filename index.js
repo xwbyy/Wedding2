@@ -14,6 +14,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 let sheets, isSheetsInitialized = false;
+const GOOGLE_SHEET_ID = process.env.GOOGLE_SHEET_ID || '15wL6CxVSo5cuxsQS9r3wcWQq6ySstPoGZR04paChoZ8';
 
 async function initializeSheets() {
   try {
@@ -21,8 +22,9 @@ async function initializeSheets() {
     const privateKey = process.env.GOOGLE_PRIVATE_KEY ? 
       process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n') : null;
 
-    if (!privateKey || !process.env.GOOGLE_CLIENT_EMAIL || !process.env.GOOGLE_PROJECT_ID || !process.env.GOOGLE_SHEET_ID) {
+    if (!privateKey || !process.env.GOOGLE_CLIENT_EMAIL || !process.env.GOOGLE_PROJECT_ID) {
       console.error('❌ Missing required Google Sheets environment variables');
+      console.log('📋 Using sheet ID:', GOOGLE_SHEET_ID);
       isSheetsInitialized = false;
       return;
     }
@@ -42,7 +44,7 @@ async function initializeSheets() {
     sheets = google.sheets({ version: 'v4', auth: authClient });
 
     await sheets.spreadsheets.values.get({
-      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      spreadsheetId: GOOGLE_SHEET_ID,
       range: 'myuser2!A1:A1',
     });
 
@@ -86,7 +88,7 @@ app.post('/api/rsvp', checkSheets, async (req, res) => {
     } else {
       // Use Google Sheets if available
       await sheets.spreadsheets.values.append({
-        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        spreadsheetId: GOOGLE_SHEET_ID,
         range: 'myuser2!A:D',
         valueInputOption: 'RAW',
         resource: {
@@ -118,7 +120,7 @@ app.get('/api/responses', checkSheets, async (req, res) => {
     
     // Use Google Sheets if available
     const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      spreadsheetId: GOOGLE_SHEET_ID,
       range: 'myuser2!A:D',
     });
     const rows = response.data.values || [];
