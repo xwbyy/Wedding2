@@ -862,6 +862,9 @@ class WeddingApp {
     
     // Start auto-play by default
     this.startAutoPlay();
+    
+    // Initialize romantic quotes carousel
+    this.initializeRomanticQuotes();
   }
   
   setupSlideshowEventListeners() {
@@ -1020,6 +1023,95 @@ class WeddingApp {
   }
 
   // =====================================
+  //   ROMANTIC QUOTES CAROUSEL
+  // =====================================
+  initializeRomanticQuotes() {
+    this.romanticQuotes = [
+      {
+        text: "Kamu adalah jawaban dari semua doa yang pernah kupanjatkan",
+        author: "Cinta Sejati"
+      },
+      {
+        text: "Setiap detak jantungku berbisik namamu dalam keheningan malam",
+        author: "Hati yang Berbunga"
+      },
+      {
+        text: "Cinta kita seperti bintang - menerangi kegelapan dengan cahaya yang tak pernah padam",
+        author: "Langit Cinta"
+      },
+      {
+        text: "Dalam pelukan cintamu, aku menemukan rumah yang selama ini kucari",
+        author: "Jiwa yang Bersatu"
+      },
+      {
+        text: "Kamu adalah puisi terindah yang pernah ditulis oleh takdir",
+        author: "Syair Cinta"
+      },
+      {
+        text: "Bersamamu, setiap hari terasa seperti halaman baru dari dongeng yang indah",
+        author: "Kisah Abadi"
+      }
+    ];
+
+    this.currentQuoteIndex = 0;
+    this.quotesContainer = document.getElementById('quotesContainer');
+    this.quotesDots = document.getElementById('quotesDots');
+
+    if (!this.quotesContainer || !this.quotesDots) return;
+
+    // Create all quote items
+    this.quotesContainer.innerHTML = '';
+    this.quotesDots.innerHTML = '';
+
+    this.romanticQuotes.forEach((quote, index) => {
+      // Create quote item
+      const quoteItem = document.createElement('div');
+      quoteItem.className = `quote-item ${index === 0 ? 'active' : ''}`;
+      quoteItem.innerHTML = `
+        <p class="quote-text">"${quote.text}"</p>
+        <span class="quote-author">- ${quote.author}</span>
+      `;
+      this.quotesContainer.appendChild(quoteItem);
+
+      // Create dot indicator
+      const dot = document.createElement('div');
+      dot.className = `quote-dot ${index === 0 ? 'active' : ''}`;
+      dot.addEventListener('click', () => this.showQuote(index));
+      this.quotesDots.appendChild(dot);
+    });
+
+    // Auto-rotate quotes every 4 seconds
+    this.quotesInterval = setInterval(() => {
+      this.nextQuote();
+    }, 4000);
+  }
+
+  showQuote(index) {
+    if (!this.quotesContainer || !this.quotesDots) return;
+
+    // Hide current quote
+    const currentQuote = this.quotesContainer.querySelector('.quote-item.active');
+    const currentDot = this.quotesDots.querySelector('.quote-dot.active');
+    
+    if (currentQuote) currentQuote.classList.remove('active');
+    if (currentDot) currentDot.classList.remove('active');
+
+    // Show new quote
+    const newQuote = this.quotesContainer.children[index];
+    const newDot = this.quotesDots.children[index];
+    
+    if (newQuote) newQuote.classList.add('active');
+    if (newDot) newDot.classList.add('active');
+
+    this.currentQuoteIndex = index;
+  }
+
+  nextQuote() {
+    const nextIndex = (this.currentQuoteIndex + 1) % this.romanticQuotes.length;
+    this.showQuote(nextIndex);
+  }
+
+  // =====================================
   //   CLEANUP
   // =====================================
   destroy() {
@@ -1031,6 +1123,9 @@ class WeddingApp {
     }
     if (this.slideshowInterval) {
       clearInterval(this.slideshowInterval);
+    }
+    if (this.quotesInterval) {
+      clearInterval(this.quotesInterval);
     }
   }
 }

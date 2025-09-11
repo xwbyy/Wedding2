@@ -1788,12 +1788,19 @@ body.scroll-locked {
 
 .slideshow-container {
   position: relative;
-  border-radius: var(--border-radius-xl);
+  border-radius: 25px;
   overflow: hidden;
   margin-bottom: var(--spacing-lg);
   background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  border: var(--glass-border);
+  backdrop-filter: var(--glass-backdrop);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-lg);
+  transition: all var(--transition-smooth);
+}
+
+.slideshow-container:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.2);
 }
 
 .slide {
@@ -1803,6 +1810,7 @@ body.scroll-locked {
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
 
 .slide-image {
@@ -1828,12 +1836,12 @@ body.scroll-locked {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: var(--glass-bg-dark);
-  backdrop-filter: var(--glass-blur);
-  border: var(--glass-border);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 50%;
-  width: 50px;
-  height: 50px;
+  width: 60px;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1842,11 +1850,13 @@ body.scroll-locked {
   cursor: pointer;
   transition: all var(--transition-smooth);
   z-index: 10;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .slide-nav:hover {
-  background: var(--primary-color);
+  background: var(--color-rose-gold);
   transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 8px 30px rgba(232, 180, 160, 0.5);
 }
 
 .prev-btn {
@@ -1884,21 +1894,22 @@ body.scroll-locked {
   gap: var(--spacing-sm);
   padding: var(--spacing-md) var(--spacing-lg);
   background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  border: var(--glass-border);
-  border-radius: var(--border-radius-lg);
-  color: var(--text-primary);
+  backdrop-filter: var(--glass-backdrop);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  color: var(--color-charcoal);
   font-size: var(--font-size-sm);
   font-weight: 500;
   cursor: pointer;
   transition: all var(--transition-smooth);
+  box-shadow: var(--glass-shadow);
 }
 
 .control-btn:hover {
-  background: var(--primary-color);
+  background: var(--color-rose-gold);
   color: white;
   transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 8px 25px rgba(232, 180, 160, 0.4);
 }
 
 .control-btn.active {
@@ -1906,7 +1917,170 @@ body.scroll-locked {
   color: white;
 }
 
-/* Romantic Features */
+/* =====================================
+   ROMANTIC FEATURES STYLES
+   ===================================== */
+.romantic-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-xl);
+  margin-top: var(--spacing-3xl);
+}
+
+.feature-title {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-xl);
+  color: var(--color-charcoal);
+  margin-bottom: var(--spacing-lg);
+  text-align: center;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.love-description {
+  font-style: italic;
+  color: var(--color-soft-gray);
+  text-align: center;
+  margin-top: var(--spacing-md);
+  line-height: 1.7;
+}
+
+/* Love Meter Styles */
+.love-progress {
+  margin: var(--spacing-lg) 0;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: var(--spacing-sm);
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(45deg, var(--color-rose-gold), var(--color-deep-rose));
+  border-radius: 10px;
+  transition: width 2s ease-in-out;
+  animation: progressGlow 2s infinite alternate;
+}
+
+@keyframes progressGlow {
+  0% { box-shadow: 0 0 10px rgba(232, 180, 160, 0.5); }
+  100% { box-shadow: 0 0 20px rgba(232, 180, 160, 0.8); }
+}
+
+.progress-text {
+  display: block;
+  text-align: center;
+  font-weight: 600;
+  color: var(--color-deep-rose);
+  font-size: var(--font-size-lg);
+}
+
+/* Romantic Quotes Carousel */
+.romantic-quotes-carousel {
+  text-align: center;
+  position: relative;
+}
+
+.quotes-container {
+  position: relative;
+  height: 120px;
+  overflow: hidden;
+  margin: var(--spacing-lg) 0;
+}
+
+.quote-item {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all var(--transition-smooth);
+}
+
+.quote-item.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.quote-text {
+  font-style: italic;
+  font-size: var(--font-size-lg);
+  color: var(--color-charcoal);
+  margin-bottom: var(--spacing-sm);
+  line-height: 1.6;
+}
+
+.quote-author {
+  font-size: var(--font-size-sm);
+  color: var(--color-deep-rose);
+  font-weight: 500;
+}
+
+.quotes-dots {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-lg);
+}
+
+.quote-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(232, 180, 160, 0.3);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.quote-dot.active {
+  background: var(--color-rose-gold);
+  transform: scale(1.2);
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-lg);
+  margin-top: var(--spacing-lg);
+}
+
+.stat-item {
+  text-align: center;
+  padding: var(--spacing-lg);
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
+  transition: all var(--transition-smooth);
+}
+
+.stat-item:hover {
+  transform: translateY(-5px);
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.stat-number {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+  color: var(--color-deep-rose);
+  margin-bottom: var(--spacing-xs);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stat-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-soft-gray);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Original romantic quote styles */
 .romantic-quote {
   margin: var(--spacing-xl) auto var(--spacing-3xl);
   max-width: 600px;
