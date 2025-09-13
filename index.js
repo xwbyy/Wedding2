@@ -13,29 +13,48 @@ const port = process.env.PORT || 5000;
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Load configuration from set.json
+let config = {};
+try {
+  const configPath = path.join(__dirname, 'set.json');
+  if (fs.existsSync(configPath)) {
+    const configData = fs.readFileSync(configPath, 'utf8');
+    config = JSON.parse(configData);
+    console.log('✅ Configuration loaded from set.json');
+  } else {
+    console.log('ℹ️ set.json not found, using environment variables');
+  }
+} catch (error) {
+  console.error('❌ Error loading set.json:', error.message);
+}
+
+// Use config values or fallback to environment variables
+const GOOGLE_SHEET_ID = config.GOOGLE_SHEET_ID || process.env.GOOGLE_SHEET_ID || '15wL6CxVSo5cuxsQS9r3wcWQq6ySstPoGZR04paChoZ8';
+const GOOGLE_PRIVATE_KEY = config.GOOGLE_PRIVATE_KEY || process.env.GOOGLE_PRIVATE_KEY;
+const GOOGLE_CLIENT_EMAIL = config.GOOGLE_CLIENT_EMAIL || process.env.GOOGLE_CLIENT_EMAIL;
+const GOOGLE_PROJECT_ID = config.GOOGLE_PROJECT_ID || process.env.GOOGLE_PROJECT_ID;
+
 let sheets, isSheetsInitialized = false;
-const GOOGLE_SHEET_ID = process.env.GOOGLE_SHEET_ID || '15wL6CxVSo5cuxsQS9r3wcWQq6ySstPoGZR04paChoZ8';
 
 async function initializeSheets() {
   try {
-    // Handle newline characters in private key
-    const privateKey = process.env.GOOGLE_PRIVATE_KEY ? 
-      process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n') : null;
-
-    if (!privateKey || !process.env.GOOGLE_CLIENT_EMAIL || !process.env.GOOGLE_PROJECT_ID) {
-      console.error('❌ Missing required Google Sheets environment variables');
+    if (!GOOGLE_PRIVATE_KEY || !GOOGLE_CLIENT_EMAIL || !GOOGLE_PROJECT_ID) {
+      console.error('❌ Missing required Google Sheets credentials');
       console.log('📋 Using sheet ID:', GOOGLE_SHEET_ID);
       isSheetsInitialized = false;
       return;
     }
 
+    // Handle newline characters in private key
+    const privateKey = GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n');
+
     const auth = new google.auth.GoogleAuth({
       credentials: {
         type: "service_account",
-        project_id: process.env.GOOGLE_PROJECT_ID,
-        private_key_id: process.env.GOOGLE_PRIVATE_KEY_ID,
+        project_id: GOOGLE_PROJECT_ID,
+        private_key_id: config.GOOGLE_PRIVATE_KEY_ID || process.env.GOOGLE_PRIVATE_KEY_ID,
         private_key: privateKey,
-        client_email: process.env.GOOGLE_CLIENT_EMAIL
+        client_email: GOOGLE_CLIENT_EMAIL
       },
       scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
@@ -43,15 +62,16 @@ async function initializeSheets() {
     const authClient = await auth.getClient();
     sheets = google.sheets({ version: 'v4', auth: authClient });
 
+    // Test connection
     await sheets.spreadsheets.values.get({
       spreadsheetId: GOOGLE_SHEET_ID,
       range: 'myuser2!A1:A1',
     });
 
     isSheetsInitialized = true;
-    console.log('✅ Google Sheets terhubung');
+    console.log('✅ Google Sheets connected successfully');
   } catch (err) {
-    console.error('❌ Gagal konek Google Sheets:', err.message);
+    console.error('❌ Failed to connect to Google Sheets:', err.message);
     isSheetsInitialized = false;
   }
 }
@@ -85,28 +105,40 @@ app.post('/api/rsvp', checkSheets, async (req, res) => {
       // Store locally if Google Sheets not available
       localRSVPData.push(rsvpData);
       console.log('✅ RSVP saved locally:', rsvpData);
-    } else {
-      // Use Google Sheets if available
-      await sheets.spreadsheets.values.append({
-        spreadsheetId: GOOGLE_SHEET_ID,
-        range: 'myuser2!A:D',
-        valueInputOption: 'RAW',
-        resource: {
-          values: [[
-            rsvpData.name,
-            rsvpData.attendance,
-            rsvpData.message,
-            rsvpData.timestamp
-          ]]
-        }
-      });
-      console.log('✅ RSVP saved to Google Sheets:', rsvpData);
+      return res.json({ success: true });
     }
+
+    // Use Google Sheets if available
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: GOOGLE_SHEET_ID,
+      range: 'myuser2!A:D',
+      valueInputOption: 'RAW',
+      resource: {
+        values: [[
+          rsvpData.name,
+          rsvpData.attendance,
+          rsvpData.message,
+          rsvpData.timestamp
+        ]]
+      }
+    });
     
+    console.log('✅ RSVP saved to Google Sheets:', rsvpData);
     res.json({ success: true });
   } catch (err) {
-    console.error('❌ Error simpan RSVP:', err.message);
-    res.status(500).json({ error: 'Gagal simpan RSVP' });
+    console.error('❌ Error saving RSVP:', err.message);
+    
+    // Fallback to local storage on error
+    const rsvpData = {
+      name: req.body.name,
+      attendance: req.body.attendance,
+      message: req.body.message || '',
+      timestamp: new Date().toLocaleString('id-ID')
+    };
+    
+    localRSVPData.push(rsvpData);
+    console.log('✅ RSVP saved to local storage as fallback:', rsvpData);
+    res.json({ success: true });
   }
 });
 
@@ -114,8 +146,7 @@ app.get('/api/responses', checkSheets, async (req, res) => {
   try {
     if (req.useLocalStorage) {
       // Return local data if Google Sheets not available
-      res.json(localRSVPData);
-      return;
+      return res.json(localRSVPData);
     }
     
     // Use Google Sheets if available
@@ -123,16 +154,20 @@ app.get('/api/responses', checkSheets, async (req, res) => {
       spreadsheetId: GOOGLE_SHEET_ID,
       range: 'myuser2!A:D',
     });
+    
     const rows = response.data.values || [];
     const start = rows[0] && (rows[0][0] === 'Name' || rows[0][0] === 'Nama') ? 1 : 0;
-    res.json(rows.slice(start).map(r => ({
+    
+    const data = rows.slice(start).map(r => ({
       name: r[0] || '',
       attendance: r[1] || '',
       message: r[2] || '',
       timestamp: r[3] || ''
-    })));
+    }));
+    
+    res.json(data);
   } catch (err) {
-    console.error('❌ Error ambil data:', err.message);
+    console.error('❌ Error fetching data from Google Sheets:', err.message);
     // Fallback to local data on error
     res.json(localRSVPData);
   }
@@ -176,13 +211,27 @@ app.get('/api/images', (req, res) => {
 });
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', sheetsInitialized: isSheetsInitialized, timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'OK', 
+    sheetsInitialized: isSheetsInitialized, 
+    configLoaded: Object.keys(config).length > 0,
+    timestamp: new Date().toISOString() 
+  });
 });
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(port, '0.0.0.0', () => console.log(`🚀 Server jalan di port ${port}`));
+app.listen(port, '0.0.0.0', () => {
+  console.log(`🚀 Server running on port ${port}`);
+  console.log(`📊 Google Sheets initialized: ${isSheetsInitialized}`);
+});
 
-setInterval(() => { if (!isSheetsInitialized) initializeSheets(); }, 30000);
+// Periodically try to reconnect to Google Sheets
+setInterval(() => { 
+  if (!isSheetsInitialized) {
+    console.log('🔄 Attempting to reconnect to Google Sheets...');
+    initializeSheets();
+  }
+}, 30000);
